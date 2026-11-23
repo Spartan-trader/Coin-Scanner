@@ -9,8 +9,9 @@ import {
   type ValueKind,
   type VerificationStatus,
 } from '../db/types';
+import { canResearch, researchLinks, type ResearchLink } from '../lib/pricing';
 import { SERIES_SUGGESTIONS } from '../lib/series';
-import { parseMoney } from '../lib/util';
+import { parseMoney, todayStamp } from '../lib/util';
 
 interface Props {
   item: CollectionItem;
@@ -32,6 +33,19 @@ export function ItemForm({ item, onChange }: Props) {
   const [high, setHigh] = useState(moneyText(item.value.high));
   const [paid, setPaid] = useState(moneyText(item.purchasePrice));
   const [showMore, setShowMore] = useState(false);
+  const [showPrices, setShowPrices] = useState(false);
+  const [research, setResearch] = useState<ResearchLink | null>(null);
+
+  /** Entering a price right after using a "Find Price" link records where it came from. */
+  function setPrice(field: 'low' | 'high', text: string) {
+    const v = { ...item.value, [field]: parseMoney(text) };
+    if (research && !item.value.source.trim()) {
+      v.source = research.sourceName;
+      v.kind = research.kind;
+      if (!v.asOf) v.asOf = todayStamp();
+    }
+    onChange({ ...item, value: v });
+  }
 
   const seriesOptions = SERIES_SUGGESTIONS.filter((s) => !item.denomination || s.denomination === item.denomination);
 
@@ -123,6 +137,37 @@ export function ItemForm({ item, onChange }: Props) {
 
       <section>
         <h2>Value</h2>
+        <button
+          type="button"
+          className="btn secondary find-price"
+          disabled={!canResearch(item)}
+          onClick={() => setShowPrices((v) => !v)}
+          aria-expanded={showPrices}
+        >
+          🔎 Find Price
+        </button>
+        {!canResearch(item) && <p className="muted small">Enter the denomination or series first, then tap Find Price.</p>}
+        {showPrices && canResearch(item) && (
+          <div className="research" data-testid="research-links">
+            <p className="small muted">
+              Opens in a new tab, already searched for this coin. Read the price there, come back, and type it below —
+              the source and today’s date are filled in for you. Prices depend heavily on condition, so compare a few.
+            </p>
+            {researchLinks(item).map((l) => (
+              <a
+                key={l.id}
+                className={`research-link ${research?.id === l.id ? 'used' : ''}`}
+                href={l.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setResearch(l)}
+              >
+                <strong>{l.label} ↗</strong>
+                <span className="small muted">{l.description}</span>
+              </a>
+            ))}
+          </div>
+        )}
         <p className="muted small">Leave blank if not researched yet. Blank is shown as “Value not yet verified”, never $0.</p>
         <div className="grid2">
           <label>
@@ -133,7 +178,7 @@ export function ItemForm({ item, onChange }: Props) {
               value={low}
               onChange={(e) => {
                 setLow(e.target.value);
-                setValue('low', parseMoney(e.target.value));
+                setPrice('low', e.target.value);
               }}
             />
           </label>
@@ -145,7 +190,7 @@ export function ItemForm({ item, onChange }: Props) {
               value={high}
               onChange={(e) => {
                 setHigh(e.target.value);
-                setValue('high', parseMoney(e.target.value));
+                setPrice('high', e.target.value);
               }}
             />
           </label>

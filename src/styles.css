@@ -168,3 +168,14 @@ h2 { font-size: 17px; margin: 0 0 8px; }
 .cam-info ul { padding-left: 18px; margin: 6px 0; }
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
 .check input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Find Price */
+.find-price { margin: 4px 0 10px; }
+.research { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.research p { margin: 0 0 2px; }
+.research-link {
+  display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--bg);
+}
+.research-link strong { color: var(--accent); }
+.research-link.used { border-color: var(--accent); }

@@ -124,6 +124,27 @@ try {
     await p2.getByRole('button', { name: /1909-S Cent/ }).waitFor();
   });
 
+  await step('Find Price: links open pre-searched; entering a price records source and date', async () => {
+    await p2.getByRole('button', { name: /1941-D Cent/ }).click();
+    await p2.getByRole('button', { name: /Find Price/ }).click();
+    const ebay = p2.getByRole('link', { name: /eBay sold prices/ });
+    const href = await ebay.getAttribute('href');
+    assert.match(href, /ebay\.com\/sch\/i\.html\?_nkw=1941%20D%20Cent&LH_Sold=1&LH_Complete=1/);
+    assert.equal(await p2.getByTestId('research-links').locator('a').count(), 6);
+    const [popup] = await Promise.all([p2.waitForEvent('popup'), ebay.click()]);
+    await popup.close();
+    await p2.getByLabel('Low ($)').fill('0.10');
+    await p2.getByLabel('High ($)').fill('0.50');
+    assert.equal(await p2.getByLabel('Pricing source').inputValue(), 'eBay sold listings');
+    assert.equal(await p2.getByLabel('Value type').inputValue(), 'completed_sales');
+    assert.match(await p2.getByLabel('Pricing date').inputValue(), /^\d{4}-\d{2}-\d{2}$/);
+    await p2.screenshot({ path: `${OUT}09-find-price.png`, fullPage: true });
+    await p2.getByRole('button', { name: 'Save changes' }).click();
+    await p2.getByRole('button', { name: 'Saved' }).waitFor();
+    await p2.getByRole('button', { name: '‹ Collection' }).click();
+    await p2.getByText('2 of 20 valued').waitFor();
+  });
+
   await step('Filter by mint mark D shows 10', async () => {
     await p2.getByLabel('Mint mark filter').selectOption('D');
     assert.equal(await p2.getByTestId('coin-list').locator('li').count(), 10);
