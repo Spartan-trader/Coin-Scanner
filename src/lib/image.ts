@@ -45,11 +45,19 @@ async function fromSource(src: Source, crop?: { x: number; y: number; w: number;
   };
 }
 
-/** Process a photo chosen from the gallery or taken by the phone's camera app. */
-export async function processFile(file: Blob): Promise<ProcessedPhoto> {
+function centreSquare(w: number, h: number) {
+  const side = Math.min(w, h);
+  return { x: (w - side) / 2, y: (h - side) / 2, w: side, h: side };
+}
+
+/**
+ * Process a photo chosen from the gallery or taken by the phone's camera app.
+ * `squareCrop` keeps only the centred square (where the circular guide is).
+ */
+export async function processFile(file: Blob, squareCrop = false): Promise<ProcessedPhoto> {
   const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
   try {
-    return await fromSource(bmp);
+    return await fromSource(bmp, squareCrop ? centreSquare(bmp.width, bmp.height) : undefined);
   } finally {
     bmp.close();
   }
@@ -63,11 +71,10 @@ export async function captureVideoFrame(video: HTMLVideoElement): Promise<Proces
   const vw = video.videoWidth;
   const vh = video.videoHeight;
   if (!vw || !vh) throw new Error('Camera is not ready yet');
-  const side = Math.min(vw, vh);
   // HTMLVideoElement.width is the layout width, so copy the frame to a canvas first.
   const frame = document.createElement('canvas');
   frame.width = vw;
   frame.height = vh;
   frame.getContext('2d')!.drawImage(video, 0, 0, vw, vh);
-  return fromSource(frame, { x: (vw - side) / 2, y: (vh - side) / 2, w: side, h: side });
+  return fromSource(frame, centreSquare(vw, vh));
 }
